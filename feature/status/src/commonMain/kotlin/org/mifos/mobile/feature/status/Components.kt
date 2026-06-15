@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,11 +29,12 @@ import mifos_mobile.core.ui.generated.resources.ic_icon_success
 import org.koin.compose.viewmodel.koinViewModel
 import org.mifos.mobile.core.common.Constants
 import org.mifos.mobile.core.designsystem.component.MifosScaffold
-import org.mifos.mobile.core.designsystem.theme.DesignToken
 import org.mifos.mobile.core.model.EventType
 import org.mifos.mobile.core.ui.component.MifosPoweredCard
 import org.mifos.mobile.core.ui.component.MifosStatusComponent
 import org.mifos.mobile.core.ui.utils.EventsEffect
+import org.mifos.mobile.core.ui.utils.LottieConstants
+import template.core.base.designsystem.theme.KptTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -76,14 +77,18 @@ internal fun StatusScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(DesignToken.padding.large),
+                .padding(KptTheme.spacing.md),
             verticalArrangement = Arrangement.Center,
         ) {
             MifosStatusComponent(
-                icon = if (uiState.eventType == EventType.SUCCESS.name) {
-                    Res.drawable.ic_icon_success
-                } else {
-                    Res.drawable.ic_icon_error
+                icon = when (uiState.eventType) {
+                    EventType.SUCCESS.name -> Res.drawable.ic_icon_success
+                    EventType.FAILURE.name -> Res.drawable.ic_icon_error
+                    else -> null
+                },
+                path = when (uiState.eventType) {
+                    EventType.SERVER_EXCEPTION.name -> LottieConstants.ERROR_ANIMATION
+                    else -> null
                 },
                 title = uiState.title ?: "",
                 subTitle = uiState.subtitle ?: "",

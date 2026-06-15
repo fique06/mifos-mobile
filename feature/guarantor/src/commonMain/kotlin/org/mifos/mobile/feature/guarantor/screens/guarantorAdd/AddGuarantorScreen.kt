@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import mifos_mobile.feature.guarantor.generated.resources.Res
@@ -46,12 +45,27 @@ import org.mifos.mobile.core.designsystem.component.MifosButton
 import org.mifos.mobile.core.designsystem.component.MifosLoadingDialog
 import org.mifos.mobile.core.designsystem.component.MifosScaffold
 import org.mifos.mobile.core.designsystem.component.MifosTextField
+import org.mifos.mobile.core.designsystem.theme.DesignToken
 import org.mifos.mobile.core.model.entity.guarantor.GuarantorApplicationPayload
 import org.mifos.mobile.core.model.entity.guarantor.GuarantorPayload
 import org.mifos.mobile.core.model.entity.guarantor.GuarantorType
 import org.mifos.mobile.core.ui.component.MifosDropDownTextField
 import org.mifos.mobile.core.ui.utils.EventsEffect
+import template.core.base.designsystem.theme.KptTheme
 
+/**
+ * Main composable function for the "Add Guarantor" screen.
+ *
+ * This screen allows users to add new guarantors or edit existing ones for a loan.
+ * It handles form input for guarantor details including first name, last name, city,
+ * and guarantor type. The screen manages different UI states including loading,
+ * error, and success.
+ *
+ * @param navigateBack A lambda function to handle the back navigation event.
+ * @param modifier Modifier for styling and positioning the screen.
+ * @param viewModel The ViewModel that manages the screen's state and business logic.
+ *   Provided by Koin dependency injection.
+ */
 @Composable
 internal fun AddGuarantorScreen(
     navigateBack: () -> Unit,
@@ -91,6 +105,18 @@ internal fun AddGuarantorScreen(
     )
 }
 
+/**
+ * Private composable function for the "Add Guarantor" screen content.
+ *
+ * This composable renders the main UI structure including the scaffold,
+ * content based on UI state, and dialog management. It handles both
+ * adding new guarantors and editing existing ones.
+ *
+ * @param state The current UI state containing all necessary data for rendering.
+ * @param onAction Callback function to handle user actions and UI events.
+ * @param snackbarHostState The SnackbarHostState for showing toast messages.
+ * @param modifier Modifier for styling and positioning the screen.
+ */
 @Composable
 private fun AddGuarantorScreen(
     state: AddGuarantorState,
@@ -128,6 +154,19 @@ private fun AddGuarantorScreen(
     )
 }
 
+/**
+ * Content composable for the "Add Guarantor" screen.
+ *
+ * This composable displays the form for adding/editing guarantor information,
+ * including input fields for first name, last name, city, and guarantor type.
+ * It also handles form submission and validation.
+ *
+ * @param state The current state containing form data and UI information.
+ * @param guarantorItem The existing guarantor data for editing, null for new guarantors.
+ * @param guarantorTypeOptions List of available guarantor type options.
+ * @param onAction Callback function to handle user actions (form submission, navigation).
+ * @param modifier Modifier for styling and positioning the content.
+ */
 @Composable
 private fun AddGuarantorContent(
     state: AddGuarantorState,
@@ -148,8 +187,8 @@ private fun AddGuarantorContent(
     Column(
         modifier = modifier
             .verticalScroll(state = scrollState)
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
+            .padding(horizontal = KptTheme.spacing.md)
+            .padding(bottom = KptTheme.spacing.md),
     ) {
         MifosDropDownTextField(
             optionsList = guarantorTypeOptions.filter { it.id == 3L }.mapNotNull { it.value },
@@ -186,7 +225,7 @@ private fun AddGuarantorContent(
             label = stringResource(Res.string.city),
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(DesignToken.spacing.dp10))
 
         MifosButton(
             content = { Text(stringResource(Res.string.submit)) },
@@ -207,6 +246,15 @@ private fun AddGuarantorContent(
     }
 }
 
+/**
+ * Dialog composable for showing dialogs on the "Add Guarantor" screen.
+ *
+ * This composable handles the display of loading and error dialogs based on the current
+ * dialog state in the [AddGuarantorState]. It shows loading overlays and error messages.
+ *
+ * @param dialogState The current state containing dialog information.
+ * @param onDismissRequest Callback function to handle dialog dismissal.
+ */
 @Composable
 private fun AddGuarantorDialog(
     dialogState: AddGuarantorState.DialogState?,

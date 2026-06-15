@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -24,9 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import mifos_mobile.feature.guarantor.generated.resources.Res
@@ -42,7 +39,22 @@ import org.mifos.mobile.core.model.entity.guarantor.GuarantorPayload
 import org.mifos.mobile.core.ui.component.MifosErrorComponent
 import org.mifos.mobile.core.ui.component.MifosProgressIndicator
 import org.mifos.mobile.core.ui.utils.EventsEffect
+import template.core.base.designsystem.theme.KptTheme
 
+/**
+ * Main composable function for "Guarantor List" screen.
+ *
+ * This screen displays a list of all guarantors for a specific loan,
+ * with options to add new guarantors and view details of existing ones.
+ * It handles loading, error, and empty states appropriately.
+ *
+ * @param navigateBack A lambda function to handle back navigation event.
+ * @param addGuarantor A lambda to navigate to add guarantor screen with loan ID.
+ * @param onGuarantorClicked A lambda to navigate to guarantor details with index and loan ID.
+ * @param modifier Modifier for styling and positioning screen.
+ * @param viewModel The ViewModel that manages screen's state and business logic.
+ *   Provided by Koin dependency injection.
+ */
 @Composable
 internal fun GuarantorListScreen(
     navigateBack: () -> Unit,
@@ -82,6 +94,17 @@ internal fun GuarantorListScreen(
     )
 }
 
+/**
+ * Private composable function for "Guarantor List" screen content.
+ *
+ * This composable renders the main UI structure including scaffold,
+ * floating action button for adding guarantors, and content based on UI state.
+ * It displays loading indicators, error messages, or the list of guarantors.
+ *
+ * @param state The current UI state containing all necessary data for rendering.
+ * @param onAction Callback function to handle user actions and UI events.
+ * @param modifier Modifier for styling and positioning screen.
+ */
 @Composable
 private fun GuarantorListScreen(
     state: GuarantorListState,
@@ -100,7 +123,7 @@ private fun GuarantorListScreen(
                     contentDescription = null,
                 )
             },
-            contentColor = MaterialTheme.colorScheme.primary,
+            contentColor = KptTheme.colorScheme.primary,
         ),
         content = {
             if (state.guarantorList == null) {
@@ -123,6 +146,16 @@ private fun GuarantorListScreen(
     )
 }
 
+/**
+ * Composable function for displaying the list of guarantors.
+ *
+ * This composable renders a lazy column of guarantor items,
+ * each showing basic guarantor information with click handlers.
+ *
+ * @param guarantorList List of guarantor payloads to display.
+ * @param onAction Callback function to handle user actions (clicking on guarantors).
+ * @param modifier Modifier for styling and positioning the list.
+ */
 @Composable
 private fun GuarantorList(
     guarantorList: List<GuarantorPayload?>,
@@ -141,6 +174,16 @@ private fun GuarantorList(
     }
 }
 
+/**
+ * Composable function for displaying a single guarantor item.
+ *
+ * This composable renders a card showing guarantor's name and type,
+ * with click functionality to view details.
+ *
+ * @param onGuarantorClicked A lambda function to handle when the guarantor item is clicked.
+ * @param modifier Modifier for styling and positioning the item.
+ * @param guarantor The guarantor data to display.
+ */
 @Composable
 private fun GuarantorListItem(
     onGuarantorClicked: () -> Unit,
@@ -148,26 +191,36 @@ private fun GuarantorListItem(
     guarantor: GuarantorPayload = GuarantorPayload(),
 ) {
     OutlinedCard(
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.background),
+        colors = CardDefaults.outlinedCardColors(containerColor = KptTheme.colorScheme.background),
         modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = KptTheme.spacing.md, vertical = KptTheme.spacing.sm)
             .fillMaxWidth(),
         onClick = { onGuarantorClicked.invoke() },
         content = {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(KptTheme.spacing.sm)) {
                 Text(
                     text = guarantor.firstname + " " + guarantor.lastname,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = KptTheme.typography.bodyMedium,
                 )
                 Text(
                     text = guarantor.guarantorType?.value ?: "",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = KptTheme.typography.labelMedium,
                 )
             }
         },
     )
 }
 
+/**
+ * Dialog composable for showing dialogs on "Guarantor List" screen.
+ *
+ * This composable handles display of loading overlays and error messages
+ * based on current dialog state in [GuarantorListState].
+ *
+ * @param dialogState The current state containing dialog information.
+ * @param state The current UI state containing network status.
+ * @param onDismissRequest Callback function to handle dialog dismissal.
+ */
 @Composable
 private fun GuarantorListDialog(
     dialogState: GuarantorListState.DialogState?,

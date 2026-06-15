@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,10 @@ package org.mifos.mobile.feature.loan.application.confirmDetails
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import io.ktor.client.plugins.ServerResponseException
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mifos_mobile.core.ui.generated.resources.internal_server_error
 import mifos_mobile.feature.loan_application.generated.resources.Res
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_error_server
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_label_applicant_name
@@ -23,7 +25,6 @@ import mifos_mobile.feature.loan_application.generated.resources.feature_apply_l
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_label_purpose
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_failure
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_failure_action
-import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_failure_tip
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_success
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_success_action
 import mifos_mobile.feature.loan_application.generated.resources.feature_apply_loan_status_success_tip
@@ -44,6 +45,7 @@ import org.mifos.mobile.core.ui.utils.BaseViewModel
 import org.mifos.mobile.core.ui.utils.ResultNavigator
 import org.mifos.mobile.core.ui.utils.ScreenUiState
 import org.mifos.mobile.core.ui.utils.observe
+import mifos_mobile.core.ui.generated.resources.Res as UiRes
 
 /**
  * `ViewModel` for the confirm details screen of the loan application process.
@@ -284,12 +286,21 @@ internal class ConfirmDetailsViewModel(
                 updateState {
                     it.copy(showOverlay = false)
                 }
+                val errorMsg = if (status.exception.cause is ServerResponseException) {
+                    getString(UiRes.string.internal_server_error)
+                } else {
+                    status.message
+                }
                 sendEvent(
                     ConfirmDetailsEvent.NavigateToStatus(
-                        eventType = EventType.FAILURE.name,
+                        eventType = if (status.exception.cause is ServerResponseException) {
+                            EventType.SERVER_EXCEPTION.name
+                        } else {
+                            EventType.FAILURE.name
+                        },
                         eventDestination = StatusNavigationDestination.PREVIOUS_SCREEN.name,
                         title = getString(Res.string.feature_apply_loan_status_failure),
-                        subtitle = getString(Res.string.feature_apply_loan_status_failure_tip),
+                        subtitle = errorMsg,
                         buttonText = getString(Res.string.feature_apply_loan_status_failure_action),
                     ),
                 )

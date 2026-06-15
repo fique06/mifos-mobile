@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,7 @@ package org.mifos.mobile.feature.auth.otpAuthentication
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import io.ktor.client.plugins.ServerResponseException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -195,7 +196,11 @@ internal class OtpAuthenticationViewModel(
                 delay(1500)
                 sendEvent(
                     OtpAuthEvent.NavigateToStatus(
-                        eventType = EventType.FAILURE.name,
+                        eventType = if (action.exception.cause is ServerResponseException) {
+                            EventType.SERVER_EXCEPTION.name
+                        } else {
+                            EventType.FAILURE.name
+                        },
                         eventDestination = LoginRoute::class.serializer().descriptor.serialName,
                         title = getString(Res.string.feature_signup_user_registered_failed),
                         subtitle = getString(Res.string.feature_signup_user_registered_failed_tip),

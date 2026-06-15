@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,6 +30,7 @@ kotlin{
             implementation(libs.google.oss.licenses)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
             api(projects.core.designsystem)
             implementation(projects.core.model)
             api(libs.kotlinx.datetime)
@@ -47,6 +48,11 @@ kotlin{
             implementation(libs.filekit.dialog.compose)
             implementation(libs.compottie.resources)
             implementation(libs.compottie.lite)
+            implementation(libs.kotlinx.html)
+        }
+        desktopMain.dependencies {
+            implementation(libs.openhtmltopdf.pdfbox)
+            implementation(libs.openhtmltopdf.svg.support)
         }
     }
 }

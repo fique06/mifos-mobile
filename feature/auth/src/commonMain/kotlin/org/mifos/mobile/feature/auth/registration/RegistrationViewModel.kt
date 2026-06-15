@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,10 +10,12 @@
 package org.mifos.mobile.feature.auth.registration
 
 import androidx.lifecycle.viewModelScope
+import io.ktor.client.plugins.ServerResponseException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mifos_mobile.core.ui.generated.resources.internal_server_error
 import mifos_mobile.feature.auth.generated.resources.Res
 import mifos_mobile.feature.auth.generated.resources.feature_recover_now_phone_number_error
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_customer_account_empty
@@ -22,11 +24,11 @@ import mifos_mobile.feature.auth.generated.resources.feature_signup_error_first_
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_invalid_email
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_invalid_name
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_last_name_empty
-import mifos_mobile.feature.auth.generated.resources.feature_signup_error_middle_name_empty
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_password_mismatch
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_password_required_error
 import mifos_mobile.feature.auth.generated.resources.feature_signup_error_password_short
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 import org.mifos.mobile.core.common.DataState
 import org.mifos.mobile.core.data.repository.UserAuthRepository
 import org.mifos.mobile.core.model.entity.register.RegisterPayload
@@ -37,6 +39,7 @@ import org.mifos.mobile.core.ui.utils.PasswordStrength
 import org.mifos.mobile.core.ui.utils.PasswordStrengthResult
 import org.mifos.mobile.core.ui.utils.ScreenUiState
 import org.mifos.mobile.core.ui.utils.ValidationHelper
+import mifos_mobile.core.ui.generated.resources.Res as UiRes
 
 /**
  * ViewModel responsible for handling user registration logic.
@@ -151,15 +154,6 @@ class RegistrationViewModel(
                 middleNameError = null,
             )
         }
-
-        debounceValidation {
-            val result = validateName(name, "middle")
-            mutableStateFlow.update {
-                it.copy(
-                    middleNameError = if (result is ValidationResult.Error) result.message else null,
-                )
-            }
-        }
     }
 
     /**
@@ -191,7 +185,6 @@ class RegistrationViewModel(
         if (name.isEmpty()) {
             return when (nameType) {
                 "first" -> ValidationResult.Error(Res.string.feature_signup_error_first_name_empty)
-                "middle" -> ValidationResult.Error(Res.string.feature_signup_error_middle_name_empty)
                 "last" -> ValidationResult.Error(Res.string.feature_signup_error_last_name_empty)
                 else -> ValidationResult.Error(Res.string.feature_signup_error_invalid_name)
             }
@@ -295,6 +288,7 @@ class RegistrationViewModel(
         account.isBlank() -> ValidationResult.Error(
             Res.string.feature_signup_error_customer_account_empty,
         )
+
         account.length > 32 -> ValidationResult.Error(
             Res.string.feature_signup_error_customer_account_not_valid,
         )
@@ -399,7 +393,10 @@ class RegistrationViewModel(
     /**
      * Validates if confirm password matches the password and meets strength requirements.
      */
-    private fun validateConfirmPassword(confirmPassword: String, password: String): ValidationResult? = when {
+    private fun validateConfirmPassword(
+        confirmPassword: String,
+        password: String,
+    ): ValidationResult? = when {
         confirmPassword.isEmpty() -> ValidationResult.Error(Res.string.feature_signup_error_password_required_error)
         confirmPassword.length < 8 -> ValidationResult.Error(Res.string.feature_signup_error_password_short)
         password != confirmPassword -> ValidationResult.Error(Res.string.feature_signup_error_password_mismatch)
@@ -459,7 +456,6 @@ class RegistrationViewModel(
         validationJob?.cancel()
 
         val firstNameError = validateName(state.firstName, "first")
-        val middleNameError = validateName(state.middleName, "middle")
         val lastNameError = validateName(state.lastName, "last")
         val emailError = validateEmail(state.email)
         val mobileNumberError = validateMobileNumber(state.mobileNumber)
@@ -473,11 +469,6 @@ class RegistrationViewModel(
         mutableStateFlow.update {
             it.copy(
                 firstNameError = if (firstNameError is ValidationResult.Error) firstNameError.message else null,
-                middleNameError = if (middleNameError is ValidationResult.Error) {
-                    middleNameError.message
-                } else {
-                    null
-                },
                 lastNameError = if (lastNameError is ValidationResult.Error) lastNameError.message else null,
                 emailError = if (emailError is ValidationResult.Error) emailError.message else null,
                 customerAccountError = if (accountError is ValidationResult.Error) {
@@ -501,7 +492,6 @@ class RegistrationViewModel(
         }
 
         val errorFree = isSuccess(firstNameError) &&
-            isSuccess(middleNameError) &&
             isSuccess(lastNameError) &&
             isSuccess(emailError) &&
             isSuccess(accountError) &&
@@ -533,7 +523,7 @@ class RegistrationViewModel(
                     authenticationMode = "email",
                     email = state.email,
                     firstName = state.firstName,
-                    middleName = state.middleName,
+                    middleName = if (state.middleName.isNotEmpty()) state.middleName else null,
                     lastName = state.lastName,
                     mobileNumber = state.mobileNumber,
                     password = state.password,
@@ -552,24 +542,33 @@ class RegistrationViewModel(
      * Handles the result of the user registration API call and updates UI state.
      */
     private fun handleRegisterResult(action: SignUpAction.Internal.ReceiveRegisterResult) {
-        when (val result = action.registerResult) {
-            is DataState.Success -> {
-                updateState { it.copy(dialogState = null, showOverlay = false) }
-                sendEvent(
-                    SignUpEvent.NavigateToUploadDocuments,
-                )
-            }
-
-            is DataState.Error -> {
-                updateState {
-                    it.copy(
-                        showOverlay = false,
-                        dialogState = SignUpState.SignUpDialog.Error(result.message),
+        viewModelScope.launch {
+            when (val result = action.registerResult) {
+                is DataState.Success -> {
+                    updateState { it.copy(dialogState = null, showOverlay = false) }
+                    sendEvent(
+                        SignUpEvent.NavigateToUploadDocuments,
                     )
                 }
-            }
 
-            DataState.Loading -> updateState { it.copy(showOverlay = true) }
+                is DataState.Error -> {
+                    val errorMsg =
+                        if (result.exception.cause is ServerResponseException) {
+                            getString(UiRes.string.internal_server_error)
+                        } else {
+                            result.message
+                        }
+
+                    updateState {
+                        it.copy(
+                            showOverlay = false,
+                            dialogState = SignUpState.SignUpDialog.Error(errorMsg),
+                        )
+                    }
+                }
+
+                DataState.Loading -> updateState { it.copy(showOverlay = true) }
+            }
         }
     }
 
@@ -632,7 +631,6 @@ data class SignUpState(
     val isSubmitButtonEnabled: Boolean
         get() = customerAccount.isNotBlank() &&
             firstName.isNotBlank() &&
-            middleName.isNotBlank() &&
             lastName.isNotBlank() &&
             email.isNotBlank() &&
             password.isNotBlank() &&

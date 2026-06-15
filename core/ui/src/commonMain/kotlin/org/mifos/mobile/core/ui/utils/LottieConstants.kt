@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,4 +11,5 @@ package org.mifos.mobile.core.ui.utils
 
 object LottieConstants {
     const val LOADING_ANIMATION = "files/loading_animation.json"
+    const val ERROR_ANIMATION = "files/error_animation.json"
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,7 +55,21 @@ import org.mifos.mobile.core.ui.component.MifosPoweredCard
 import org.mifos.mobile.core.ui.component.MifosProgressIndicator
 import org.mifos.mobile.core.ui.component.MifosProgressIndicatorOverlay
 import org.mifos.mobile.core.ui.utils.EventsEffect
+import template.core.base.designsystem.theme.KptTheme
 
+/**
+ * Main composable function for the "Make Transfer" screen.
+ *
+ * This screen allows users to initiate a transfer by selecting from and to accounts,
+ * entering an amount and remarks, and proceeding with the transfer process. It handles
+ * different UI states including loading, error, network issues, and success.
+ *
+ * @param navigateBack A lambda function to handle the back navigation event.
+ * @param navigateToTransferScreen A lambda to navigate to the transfer review screen,
+ *   passing the transfer payload, transfer type, and destination.
+ * @param viewModel The ViewModel that manages the screen's state and business logic.
+ *   Provided by Koin dependency injection.
+ */
 @Composable
 internal fun MakeTransferScreen(
     navigateBack: () -> Unit,
@@ -70,8 +83,13 @@ internal fun MakeTransferScreen(
             MakeTransferEvent.NavigateBack -> {
                 navigateBack.invoke()
             }
+
             is MakeTransferEvent.NavigateToTransferScreen -> {
-                navigateToTransferScreen(event.reviewTransferPayload, event.transferType, event.destination)
+                navigateToTransferScreen(
+                    event.reviewTransferPayload,
+                    event.transferType,
+                    event.destination,
+                )
             }
         }
     }
@@ -95,6 +113,17 @@ internal fun MakeTransferScreen(
     )
 }
 
+/**
+ * The main content composable for the "Make Transfer" screen.
+ *
+ * This composable renders the UI based on the current state, including:
+ * - Loading states (full screen and overlay)
+ * - Error states (server errors and network issues)
+ * - Success state with the transfer form
+ *
+ * @param state The current UI state containing all necessary data for rendering.
+ * @param onAction Callback function to handle user actions and UI events.
+ */
 @Composable
 internal fun MakeTransferScreenContent(
     state: MakeTransferState,
@@ -146,8 +175,8 @@ internal fun MakeTransferScreenContent(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(
-                            horizontal = DesignToken.padding.large,
-                            vertical = DesignToken.padding.extraLargeIncreased,
+                            horizontal = KptTheme.spacing.md,
+                            vertical = KptTheme.spacing.xl,
                         ),
                     verticalArrangement = Arrangement.spacedBy(DesignToken.padding.largeIncreased),
                 ) {
@@ -164,6 +193,7 @@ internal fun MakeTransferScreenContent(
                                 ),
                             )
                         },
+                        shape = KptTheme.shapes.medium,
                     )
 
                     MifosPayFromDropdownUI(
@@ -180,7 +210,7 @@ internal fun MakeTransferScreenContent(
                         value = state.amount,
                         onValueChange = { onAction(MakeTransferAction.OnAmountChanged(it)) },
                         label = stringResource(Res.string.amount),
-                        shape = DesignToken.shapes.medium,
+                        shape = KptTheme.shapes.medium,
                         textStyle = MifosTypography.bodyLarge,
                         config = MifosTextFieldConfig(
                             enabled = state.outstandingBalance == null,
@@ -191,7 +221,7 @@ internal fun MakeTransferScreenContent(
                                     Icon(
                                         imageVector = MifosIcons.ErrorCircle,
                                         contentDescription = stringResource(Res.string.error_description),
-                                        tint = MaterialTheme.colorScheme.error,
+                                        tint = KptTheme.colorScheme.error,
                                     )
                                 }
                             } else {
@@ -207,7 +237,7 @@ internal fun MakeTransferScreenContent(
                         value = state.remark,
                         onValueChange = { onAction(MakeTransferAction.OnRemarksChanged(it)) },
                         label = stringResource(Res.string.remarks),
-                        shape = DesignToken.shapes.medium,
+                        shape = KptTheme.shapes.medium,
                         textStyle = MifosTypography.bodyLarge,
                         config = MifosTextFieldConfig(
                             isError = state.remarkError != null,
@@ -219,7 +249,7 @@ internal fun MakeTransferScreenContent(
                                     Icon(
                                         imageVector = MifosIcons.ErrorCircle,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
+                                        tint = KptTheme.colorScheme.error,
                                     )
                                 }
                             } else {
@@ -251,6 +281,17 @@ internal fun MakeTransferScreenContent(
     }
 }
 
+/**
+ * Dialog composable for showing error dialogs on the "Make Transfer" screen.
+ *
+ * This composable handles the display of error dialogs based on the current
+ * dialog state in the [MakeTransferState]. It shows network or server errors
+ * with retry functionality.
+ *
+ * @param state The current state containing dialog information.
+ * @param onAction Callback function to handle dialog actions (e.g., retry).
+ * @param modifier Modifier for styling and positioning the dialog.
+ */
 @Composable
 internal fun MakeTransferDialog(
     state: MakeTransferState,
@@ -267,10 +308,17 @@ internal fun MakeTransferDialog(
                 modifier = modifier,
             )
         }
+
         null -> {}
     }
 }
 
+/**
+ * Preview composable for the "Make Transfer" screen.
+ *
+ * This preview function allows developers to visualize the Make Transfer screen
+ * in the Android Studio preview panel with sample data.
+ */
 @Composable
 @Preview
 fun MakeTransferScreenPreview() {

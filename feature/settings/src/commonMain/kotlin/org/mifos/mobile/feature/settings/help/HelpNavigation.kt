@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ import org.mifos.mobile.feature.settings.componenets.SettingsItems
  *
  * @param navOptions Optional [NavOptions] to apply to this navigation operation.
  */
-internal fun NavController.navigateToHelp(navOptions: NavOptions? = null) =
+fun NavController.navigateToHelp(navOptions: NavOptions? = null) =
     navigate(SettingsItems.Help, navOptions)
 
 /**
@@ -31,7 +31,7 @@ internal fun NavController.navigateToHelp(navOptions: NavOptions? = null) =
  * @param onBackClick A lambda function to be invoked when the user initiates a back action.
  * @param navigateToFAQ A lambda function to navigate to the "FAQ" screen.
  */
-internal fun NavGraphBuilder.helpDestination(
+fun NavGraphBuilder.helpDestination(
     onBackClick: () -> Unit,
     navigateToFAQ: () -> Unit,
 ) {

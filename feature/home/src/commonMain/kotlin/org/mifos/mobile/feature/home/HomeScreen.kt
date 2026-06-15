@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,23 +11,22 @@ package org.mifos.mobile.feature.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -39,17 +38,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.ImmutableList
 import mifos_mobile.core.ui.generated.resources.ic_icon_logo_1
 import mifos_mobile.feature.home.generated.resources.Res
+import mifos_mobile.feature.home.generated.resources.feature_home_edit_services
 import mifos_mobile.feature.home.generated.resources.feature_home_greet
+import mifos_mobile.feature.home.generated.resources.feature_home_no_active_accounts
+import mifos_mobile.feature.home.generated.resources.feature_home_no_services_hint
+import mifos_mobile.feature.home.generated.resources.feature_home_selected
 import mifos_mobile.feature.home.generated.resources.feature_home_services
 import mifos_mobile.feature.home.generated.resources.feature_home_total_available_loan
 import mifos_mobile.feature.home.generated.resources.feature_home_total_available_savings
 import mifos_mobile.feature.home.generated.resources.feature_server_error
+import mifos_mobile.feature.home.generated.resources.notifications
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -60,6 +67,7 @@ import org.mifos.mobile.core.designsystem.icon.MifosIcons
 import org.mifos.mobile.core.designsystem.theme.DesignToken
 import org.mifos.mobile.core.designsystem.theme.MifosMobileTheme
 import org.mifos.mobile.core.designsystem.theme.MifosTypography
+import org.mifos.mobile.core.designsystem.utils.clippedClickable
 import org.mifos.mobile.core.ui.component.MifosAccountApplyDashboard
 import org.mifos.mobile.core.ui.component.MifosDashboardCard
 import org.mifos.mobile.core.ui.component.MifosErrorComponent
@@ -68,6 +76,7 @@ import org.mifos.mobile.core.ui.utils.EventsEffect
 import org.mifos.mobile.feature.home.components.BottomSheetContent
 import org.mifos.mobile.feature.home.navigation.HomeNavigationDestination
 import org.mifos.mobile.feature.home.navigation.HomeNavigator
+import template.core.base.designsystem.theme.KptTheme
 
 @Composable
 internal fun HomeScreen(
@@ -76,6 +85,9 @@ internal fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        viewModel.handleAuthCheckOnResume()
+    }
 
     EventsEffect(viewModel.eventFlow) { event ->
         when (event) {
@@ -90,7 +102,7 @@ internal fun HomeScreen(
                     Constants.APPLY_LOAN -> onNavigate(HomeNavigationDestination.ApplyLoan)
                     Constants.APPLY_SAVINGS -> onNavigate(HomeNavigationDestination.ApplySavings)
                     Constants.APPLY_SHARE -> onNavigate(HomeNavigationDestination.ApplyShare)
-                    Constants.TRANSACTIONS -> onNavigate(HomeNavigationDestination.Transaction)
+                    Constants.TRANSACTIONS -> onNavigate(HomeNavigationDestination.TransactionHistory)
                     Constants.CHARGES -> onNavigate(HomeNavigationDestination.Charge)
                     Constants.BENEFICIARY -> onNavigate(HomeNavigationDestination.Beneficiary)
                     Constants.HELP -> onNavigate(HomeNavigationDestination.Faq)
@@ -130,20 +142,20 @@ internal fun HomeContent(
         onNavigateBack = {},
         actions = {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(DesignToken.spacing.large),
+                horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.md),
             ) {
                 // TODO : once ui/ux team gives this flow uncomment and implement
-//                Image(
-//                    imageVector = MifosIcons.SearchNew,
-//                    contentDescription = null,
-//                )
                 Image(
                     imageVector = MifosIcons.Alert,
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
-                    modifier = Modifier.clickable {
-                        onAction(HomeAction.OnNotificationClick)
-                    },
+                    contentDescription = stringResource(Res.string.notifications),
+                    colorFilter = ColorFilter.tint(KptTheme.colorScheme.onSurface),
+                    modifier = Modifier
+                        .clippedClickable(
+                            shape = KptTheme.shapes.extraSmall,
+                            onClick = {
+                                onAction(HomeAction.OnNotificationClick)
+                            },
+                        ),
                 )
             }
         },
@@ -171,19 +183,20 @@ internal fun HomeContent(
                 Column(
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
-                        .padding(DesignToken.padding.large),
+                        .padding(KptTheme.spacing.md),
                 ) {
-                    Spacer(modifier = Modifier.height(DesignToken.spacing.small))
+                    Spacer(modifier = Modifier.height(KptTheme.spacing.sm))
                     Text(
                         text = stringResource(
                             Res.string.feature_home_greet,
                             state.firstName.toString(),
                         ),
                         style = MifosTypography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = KptTheme.colorScheme.onSurface,
+                        modifier = Modifier.semantics { heading() },
                     )
 
-                    Spacer(modifier = Modifier.height(DesignToken.spacing.large))
+                    Spacer(modifier = Modifier.height(KptTheme.spacing.md))
 
                     if (state.isAccountsPresent) {
                         MifosDashboardCard(
@@ -196,24 +209,56 @@ internal fun HomeContent(
                             currency = state.currency,
                         )
                     } else {
-                        MifosAccountApplyDashboard(
-                            onOpenAccountClick = { onAction(HomeAction.BottomBarPicker) },
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.feature_home_no_active_accounts),
+                                style = MifosTypography.bodyMedium,
+                                color = KptTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(KptTheme.spacing.md))
+                            MifosAccountApplyDashboard(
+                                onOpenAccountClick = { onAction(HomeAction.BottomBarPicker) },
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(DesignToken.spacing.extraLarge))
 
-                    Text(
-                        text = stringResource(Res.string.feature_home_services),
-                        style = MifosTypography.titleMediumEmphasized,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.xs),
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.feature_home_services),
+                            style = MifosTypography.titleMediumEmphasized,
+                            color = KptTheme.colorScheme.onSurface,
+                        )
+                        IconButton(onClick = { onAction(HomeAction.ToggleEditMode) }) {
+                            Icon(
+                                imageVector = if (state.isEditMode) MifosIcons.Edit else MifosIcons.GridApps,
+                                contentDescription = stringResource(Res.string.feature_home_edit_services),
+                                tint = KptTheme.colorScheme.primary,
+                                modifier = Modifier.size(DesignToken.sizes.iconSmall),
+                            )
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(DesignToken.spacing.large))
+                    Spacer(modifier = Modifier.height(KptTheme.spacing.sm))
 
                     ServiceBox(
-                        items = state.items,
-                        onAction = onAction,
+                        visibleItems = state.visibleItems,
+                        isEditMode = state.isEditMode,
+                        selectedServices = state.selectedServices,
+                        onServiceClick = { route ->
+                            if (state.isEditMode) {
+                                onAction(HomeAction.ToggleServiceSelection(route))
+                            } else {
+                                onAction(HomeAction.OnNavigate(route))
+                            }
+                        },
                     )
                 }
             }
@@ -225,28 +270,54 @@ internal fun HomeContent(
 
 @Composable
 internal fun ServiceBox(
-    items: ImmutableList<ServiceItem>,
-    onAction: (HomeAction) -> Unit,
+    visibleItems: ImmutableList<ServiceItem>,
+    isEditMode: Boolean,
+    selectedServices: Set<String>,
+    onServiceClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    FlowRow(
-        modifier = modifier
-            .fillMaxWidth(),
-        maxItemsInEachRow = 4,
-        horizontalArrangement = Arrangement.spacedBy(DesignToken.spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(DesignToken.spacing.medium),
+    val columnCount = 4
+    val spacing = DesignToken.spacing.medium
+    val rows = visibleItems.chunked(columnCount)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        items.forEach { item ->
-            Box(
+        if (visibleItems.isEmpty() && !isEditMode) {
+            Text(
+                text = stringResource(Res.string.feature_home_no_services_hint),
+                style = MifosTypography.bodyMedium,
+                color = KptTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .weight(1f),
-                contentAlignment = Alignment.Center,
+                    .fillMaxWidth()
+                    .padding(DesignToken.padding.large),
+            )
+        }
+        rows.forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing),
             ) {
-                ServiceItemCard(
-                    title = item.title,
-                    icon = item.icon,
-                    onClick = { onAction(HomeAction.OnNavigate(item.route)) },
-                )
+                rowItems.forEach { item ->
+                    val isSelected = selectedServices.contains(item.route)
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        ServiceItemCard(
+                            title = item.title,
+                            icon = item.icon,
+                            isSelected = isSelected,
+                            isEditMode = isEditMode,
+                            onClick = { onServiceClick(item.route) },
+                        )
+                    }
+                }
+                repeat(columnCount - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -258,37 +329,60 @@ internal fun ServiceItemCard(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    isEditMode: Boolean = false,
 ) {
     Column(
         modifier = modifier
-            .padding(vertical = DesignToken.padding.small),
-        verticalArrangement = Arrangement.spacedBy(DesignToken.spacing.small),
+            .padding(vertical = KptTheme.spacing.sm)
+            .clippedClickable(
+                onClick = onClick,
+            ).semantics(mergeDescendants = true) {
+                role = Role.Button
+            },
+        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .clickable {
-                    onClick()
-                },
-        ) {
+        Box {
             Image(
                 modifier = Modifier
                     .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.secondaryContainer,
-                        DesignToken.shapes.medium,
+                        DesignToken.strokes.thin,
+                        if (isEditMode && isSelected) {
+                            KptTheme.colorScheme.primary
+                        } else {
+                            KptTheme.colorScheme.outlineVariant
+                        },
+                        KptTheme.shapes.medium,
                     )
-                    .padding(DesignToken.padding.medium + 2.dp),
+                    .padding(DesignToken.padding.dp14),
                 imageVector = icon,
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.tertiary),
+                colorFilter = ColorFilter.tint(
+                    if (isEditMode && isSelected) {
+                        KptTheme.colorScheme.primary
+                    } else {
+                        KptTheme.colorScheme.tertiary
+                    },
+                ),
             )
+            if (isEditMode && isSelected) {
+                Icon(
+                    imageVector = MifosIcons.CheckCircle1,
+                    contentDescription = stringResource(Res.string.feature_home_selected),
+                    tint = KptTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(DesignToken.spacing.extraSmall)
+                        .size(DesignToken.spacing.medium),
+                )
+            }
         }
 
         Text(
             text = stringResource(title),
             style = MifosTypography.bodySmallEmphasized,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = KptTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
     }
@@ -325,7 +419,7 @@ private fun HomeScreenDialog(
                     onAction(HomeAction.OnDismissDialog)
                 },
                 sheetState = sheetState,
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = KptTheme.colorScheme.surface,
                 contentWindowInsets = {
                     BottomSheetDefaults.windowInsets
                 },

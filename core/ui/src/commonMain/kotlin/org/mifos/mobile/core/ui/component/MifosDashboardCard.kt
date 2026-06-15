@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,11 +29,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,12 +39,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import mifos_mobile.core.ui.generated.resources.Res
 import mifos_mobile.core.ui.generated.resources.feature_dashboard_no_accounts_description
 import mifos_mobile.core.ui.generated.resources.feature_dashboard_no_accounts_title
 import mifos_mobile.core.ui.generated.resources.feature_dashboard_open_account
+import mifos_mobile.core.ui.generated.resources.feature_dashboard_toggle_visibility
+import mifos_mobile.core.ui.generated.resources.feature_dashboard_totals
 import mifos_mobile.core.ui.generated.resources.ic_icon_dashboard
 import mifos_mobile.core.ui.generated.resources.powered_by
 import org.jetbrains.compose.resources.StringResource
@@ -60,6 +62,7 @@ import org.mifos.mobile.core.designsystem.theme.AppColors
 import org.mifos.mobile.core.designsystem.theme.DesignToken
 import org.mifos.mobile.core.designsystem.theme.MifosMobileTheme
 import org.mifos.mobile.core.designsystem.theme.MifosTypography
+import template.core.base.designsystem.theme.KptTheme
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -74,10 +77,21 @@ fun MifosDashboardCard(
     currency: String? = null,
     onVisibilityToggle: () -> Unit = {},
 ) {
+    val totalDescription = stringResource(
+        Res.string.feature_dashboard_totals,
+        loanAmount ?: "0",
+        currency ?: "",
+        savingsAmount ?: "0",
+        currency ?: "",
+    )
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .height(if (isSingleLine) 76.dp else 128.dp)
+            .focusable()
+            .semantics(mergeDescendants = true) {
+                contentDescription = totalDescription
+            }
+            .clip(KptTheme.shapes.large)
+            .height(if (isSingleLine) DesignToken.sizes.boxDp76 else DesignToken.sizes.boxDp128)
             .fillMaxWidth(),
     ) {
         Image(
@@ -90,7 +104,7 @@ fun MifosDashboardCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(DesignToken.padding.small),
+                .padding(KptTheme.spacing.sm),
             horizontalArrangement = Arrangement.spacedBy(
                 DesignToken.spacing.medium,
                 Alignment.End,
@@ -107,8 +121,7 @@ fun MifosDashboardCard(
                         Text(
                             text = stringResource(loanAccount),
                             style = MifosTypography.bodySmall,
-//                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
-                            color = AppColors.customWhite.copy(alpha = 0.5f),
+                            color = AppColors.customWhite.copy(alpha = 0.85f),
                         )
                         AnimatedContent(
                             targetState = isVisible,
@@ -131,8 +144,8 @@ fun MifosDashboardCard(
                         Text(
                             text = stringResource(savingsAccount),
                             style = MifosTypography.bodySmall,
-//                            color = MaterialTheme.colorScheme.secondary,
-                            color = AppColors.customWhite.copy(alpha = 0.5f),
+//                            color = KptTheme.colorScheme.secondary,
+                            color = AppColors.customWhite.copy(alpha = 0.85f),
                         )
                         AnimatedContent(
                             targetState = isVisible,
@@ -156,11 +169,11 @@ fun MifosDashboardCard(
             onClick = onVisibilityToggle,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(12.dp),
+                .padding(DesignToken.padding.medium),
         ) {
             Icon(
                 imageVector = if (isVisible) MifosIcons.Eye else MifosIcons.EyeOff,
-                contentDescription = "Toggle Visibility",
+                contentDescription = stringResource(Res.string.feature_dashboard_toggle_visibility),
                 tint = Color.White,
             )
         }
@@ -176,22 +189,22 @@ fun MifosAccountApplyDashboard(
         modifier = modifier
             .padding(horizontal = DesignToken.padding.largeIncreased)
             .border(
-                0.5.dp,
-                MaterialTheme.colorScheme.primary,
-                DesignToken.shapes.medium,
+                DesignToken.strokes.dpPoint5,
+                KptTheme.colorScheme.primary,
+                KptTheme.shapes.medium,
             ),
         variant = CardVariant.OUTLINED,
         enabled = false,
         onClick = onOpenAccountClick,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = KptTheme.colorScheme.onSurface,
         ),
     ) {
         Column(
             modifier = Modifier
                 .background(
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                    KptTheme.colorScheme.onSurface.copy(alpha = 0.01f),
                 )
                 .fillMaxWidth()
                 .padding(DesignToken.padding.extraLarge),
@@ -208,14 +221,14 @@ fun MifosAccountApplyDashboard(
             Text(
                 text = stringResource(Res.string.feature_dashboard_no_accounts_title),
                 style = MifosTypography.titleMediumEmphasized,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = KptTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
 
             Text(
                 text = stringResource(Res.string.feature_dashboard_no_accounts_description),
                 style = MifosTypography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
+                color = KptTheme.colorScheme.secondary,
                 textAlign = TextAlign.Center,
             )
 
@@ -242,7 +255,7 @@ private fun MifosDashboardCard() {
     MifosMobileTheme {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.md),
         ) {
             MifosDashboardCard(
                 isVisible = true,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Mifos Initiative
+ * Copyright 2026 Mifos Initiative
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,16 +13,19 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponsePipeline
+import io.ktor.http.HttpStatusCode
 import io.ktor.util.AttributeKey
 import org.mifos.mobile.core.datastore.UserPreferencesRepository
 
 class KtorInterceptor(
     private val getToken: () -> String?,
+    private val onUnauthorized: (suspend () -> Unit)?,
 ) {
     companion object Plugin : HttpClientPlugin<Config, KtorInterceptor> {
         private const val HEADER_TENANT = "Fineract-Platform-TenantId"
         private const val HEADER_AUTH = "Authorization"
-        private const val DEFAULT = "default"
+        private const val MIFOS_BANK_1 = "mifos-bank-1"
         private const val CONTENT_TYPE = "Content-Type"
         override val key: AttributeKey<KtorInterceptor> = AttributeKey("KtorInterceptor")
 
@@ -31,7 +34,7 @@ class KtorInterceptor(
                 context.header(CONTENT_TYPE, "application/json")
                 context.header("Accept", "application/json")
                 context.header("Accept", "*/*")
-                context.header(HEADER_TENANT, DEFAULT)
+                context.header(HEADER_TENANT, MIFOS_BANK_1)
 
                 plugin.getToken()?.let { token ->
                     if (token.isNotEmpty()) {
@@ -39,17 +42,31 @@ class KtorInterceptor(
                     }
                 }
             }
+            scope.responsePipeline.intercept(HttpResponsePipeline.After) {
+                if (context.response.status == HttpStatusCode.Unauthorized) {
+                    runCatching {
+                        plugin.onUnauthorized?.invoke()
+                    }.onFailure { throwable ->
+                        throwable.printStackTrace()
+                    }
+                }
+                proceed()
+            }
         }
 
         override fun prepare(block: Config.() -> Unit): KtorInterceptor {
             val config = Config().apply(block)
-            return KtorInterceptor(config.getToken)
+            return KtorInterceptor(
+                getToken = config.getToken,
+                onUnauthorized = config.onUnauthorized,
+            )
         }
     }
 }
 
 class Config {
     lateinit var getToken: () -> String?
+    var onUnauthorized: (suspend () -> Unit)? = null
 }
 
 class KtorInterceptorRe(
